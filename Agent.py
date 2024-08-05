@@ -222,7 +222,7 @@ class SumTree:
         right = left + 1
         if left >= len(self.tree):
             return idx
-        if s <= self.tree[left]:
+        if s <= self.tree[left] and self.tree[left] > 0:
             return self._retrieve(left, s)
         else:
             if self.tree[right] > 0:
