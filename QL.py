@@ -5,16 +5,15 @@ import torch.nn.functional as F
 import torch as th
 
 class QValues():
-    device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #device = th.device("mps" if th.backends.mps.is_available() else "cpu")
+    def __init__(self,device):
+        self.device= device
     @staticmethod
     def get_current(policy_net,states,actions):
         value_=policy_net(states).gather(dim=1,index=actions.unsqueeze(-1))
         return value_
     
-    @staticmethod
-    def get_next(target_net,next_states,is_done):
-        next_q_values= torch.zeros(len(next_states)).to(QValues.device)
+    def get_next(self,target_net,next_states,is_done):
+        next_q_values= torch.zeros(len(next_states)).to(self.device)
         non_final_mask= ~is_done
         non_final_next_states= next_states[non_final_mask]
         if len(non_final_next_states)>0:

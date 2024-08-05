@@ -18,6 +18,7 @@ class QDQ:
         self.agent= agent
         self.policy_net= DQN(self.features,self.env.get_number_of_actions()).to(self.device)
         self.target_net= DQN(self.features,self.env.get_number_of_actions()).to(self.device)
+        self.qvalue= QValues(device)
 
     def training_priorized_memory(self,batch_size,gamma,target_update,learning_rate,num_episodes):
         print('Training Process with Prioritized Memory')
@@ -48,9 +49,9 @@ class QDQ:
                 if self.memory.can_provide_sample(batch_size):
                     experiences,idxs,is_weights= self.memory.sample(batch_size)
                     states,actions,rewards,next_states,is_done= self.__extract_tensors(experiences)
-                    current_q_values= QValues.get_current(self.policy_net,states,actions)
+                    current_q_values= self.qvalue.get_current(self.policy_net,states,actions)
                     with th.no_grad():
-                        next_q_values= QValues.get_next(self.target_net,next_states,is_done)
+                        next_q_values= self.qvalue.get_next(self.target_net,next_states,is_done)
                     target_q_values= (next_q_values*gamma)+rewards
                     is_weights= th.tensor(is_weights,dtype=th.float).unsqueeze(1)
                     #loss= F.mse_loss(current_q_values,target_q_values.unsqueeze(1))
@@ -96,9 +97,9 @@ class QDQ:
                     experiences,*_= self.memory.sample(batch_size)
                     #print(experiences)
                     states,actions,rewards,next_states,is_done= self.__extract_tensors(experiences)
-                    current_q_values= QValues.get_current(self.policy_net,states,actions)
+                    current_q_values= self.qvalue.get_current(self.policy_net,states,actions)
                     with th.no_grad():
-                        next_q_values= QValues.get_next(self.target_net,next_states,is_done)
+                        next_q_values= self.qvalue.get_next(self.target_net,next_states,is_done)
                     target_q_values= (next_q_values*gamma)+rewards
                     loss= F.mse_loss(current_q_values,target_q_values.unsqueeze(1))
                     optimizer.zero_grad()
