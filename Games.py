@@ -9,6 +9,7 @@ class Field:
         '''
         Constructor of the class Field
         Parameters:
+        device: device to run the game
         size: size of the field
         item_pickup: position of the item to pickup
         item_dropoff: position of the item to dropoff

@@ -12,6 +12,7 @@ def training_process(params_env,prms_tra,type_memory):
     '''
     #device= th.device("cuda" if th.cuda.is_available() else "cpu")
     device = th.device("mps" if th.backends.mps.is_available() else "cpu")
+    print('The training process used this Device: ',device)
     env= Field(device,params_env['size'],params_env['start_position'],params_env['item_pickup'],
                 params_env['item_dropoff'],params_env['zones_block'],params_env['Path'])
     eps= EpsilonGreedyStrategy(prms_tra['eps_start'],prms_tra['eps_end'],prms_tra['eps_decay'])
