@@ -38,14 +38,14 @@ class QDQ:
                 action= self.agent.select_action(state,self.policy_net)
                 reward,done= self.env.make_action(action)
                 next_state= self.env.get_state()
+                done = th.tensor([done], device=self.device, dtype=th.bool)
                 # Calculate the error for the priority
                 with th.no_grad():
-                    current_q_value = self.policy_net(state).gather(1, th.tensor([[action]]))
-                    next_q_value = self.target_net(next_state).max(1)[0].unsqueeze(1)
-                    target_q_value = reward + (gamma * next_q_value * (1 - done))
+                    current_q_value = self.qvalue.get_current_i(self.policy_net, state, action)
+                    next_q_value = self.qvalue.get_next_i(self.target_net, next_state)
+                    target_q_value = reward + (gamma * next_q_value * (1 - done.float()))
                     error = abs(current_q_value - target_q_value).item()
                 self.memory.push(error, Experience(state, action, next_state, reward, done))
-                #memory.push(Experience(state,action,next_state,reward,done))
                 if self.memory.can_provide_sample(batch_size):
                     experiences,idxs,is_weights= self.memory.sample(batch_size)
                     states,actions,rewards,next_states,is_done= self.__extract_tensors(experiences)
@@ -92,10 +92,10 @@ class QDQ:
                 action= self.agent.select_action(state,self.policy_net)
                 reward,done= self.env.make_action(action)
                 next_state= self.env.get_state()
+                done = th.tensor([done], device=self.device, dtype=th.bool)
                 self.memory.push(Experience(state,action,next_state,reward,done))
                 if self.memory.can_provide_sample(batch_size):
                     experiences,*_= self.memory.sample(batch_size)
-                    #print(experiences)
                     states,actions,rewards,next_states,is_done= self.__extract_tensors(experiences)
                     current_q_values= self.qvalue.get_current(self.policy_net,states,actions)
                     with th.no_grad():

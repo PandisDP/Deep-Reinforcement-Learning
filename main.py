@@ -51,4 +51,4 @@ if __name__ == '__main__':
                 "lr": 0.001,
                 "num_episodes": 10000
     }
-    training_process(params_game,params_training,1)
+    training_process(params_game,params_training,0)

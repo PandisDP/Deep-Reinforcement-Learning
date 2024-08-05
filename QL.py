@@ -7,18 +7,21 @@ import torch as th
 class QValues():
     def __init__(self,device):
         self.device= device
-    @staticmethod
-    def get_current(policy_net,states,actions):
-        value_=policy_net(states).gather(dim=1,index=actions.unsqueeze(-1))
-        return value_
+    def get_current(self,policy_net,states,actions):
+        return policy_net(states).gather(dim=1,index=actions.unsqueeze(-1))
+    
+    def get_current_i(self,policy_net,state,action):
+        return policy_net(state).gather(1, th.tensor([[action]], device=self.device))
+    
+    def get_next_i(self, target_net, next_state):
+        return target_net(next_state).max(1)[0].unsqueeze(1)
     
     def get_next(self,target_net,next_states,is_done):
         next_q_values= torch.zeros(len(next_states)).to(self.device)
         non_final_mask= ~is_done
         non_final_next_states= next_states[non_final_mask]
         if len(non_final_next_states)>0:
-            with torch.no_grad():
-                next_q_values[non_final_mask]= target_net(non_final_next_states).max(dim=1)[0]
+            next_q_values[non_final_mask]= target_net(non_final_next_states).max(dim=1)[0]
         return next_q_values
         
 class DQN(nn.Module):
