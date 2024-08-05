@@ -10,7 +10,8 @@ def training_process(params_env,prms_tra,type_memory):
     prms_tra: Dictionary with the parameters of the training
     type_memory: 0 for ReplayMemory and 1 for PrioritizedReplayMemory
     '''
-    device= th.device("cuda" if th.cuda.is_available() else "cpu")
+    #device= th.device("cuda" if th.cuda.is_available() else "cpu")
+    device = th.device("mps" if th.backends.mps.is_available() else "cpu")
     env= Field(device,params_env['size'],params_env['start_position'],params_env['item_pickup'],
                 params_env['item_dropoff'],params_env['zones_block'],params_env['Path'])
     eps= EpsilonGreedyStrategy(prms_tra['eps_start'],prms_tra['eps_end'],prms_tra['eps_decay'])
@@ -51,4 +52,4 @@ if __name__ == '__main__':
                 "lr": 0.001,
                 "num_episodes": 10000
     }
-    training_process(params_game,params_training,0)
+    training_process(params_game,params_training,1)

@@ -53,7 +53,7 @@ class QDQ:
                     with th.no_grad():
                         next_q_values= self.qvalue.get_next(self.target_net,next_states,is_done)
                     target_q_values= (next_q_values*gamma)+rewards
-                    is_weights= th.tensor(is_weights,dtype=th.float).unsqueeze(1)
+                    is_weights= th.tensor(is_weights,dtype=th.float).unsqueeze(1).to(self.device)
                     #loss= F.mse_loss(current_q_values,target_q_values.unsqueeze(1))
                     loss = (is_weights * F.mse_loss(current_q_values, target_q_values.unsqueeze(1)
                                                     , reduction='none')).mean()
@@ -61,7 +61,7 @@ class QDQ:
                     loss.backward()
                     optimizer.step()
                     # Update priorities
-                    errors = th.abs(current_q_values - target_q_values.unsqueeze(1)).detach().numpy()
+                    errors = th.abs(current_q_values - target_q_values.unsqueeze(1)).detach().cpu().numpy()
                     for idx, error in zip(idxs, errors):
                         self.memory.update(idx, error)
                     episode_losses.append(loss.item())
@@ -118,11 +118,11 @@ class QDQ:
 
     def __extract_tensors(self,experiences):
         batch = Experience(*zip(*experiences))
-        states = th.cat(batch.state)
-        actions = th.cat(batch.action)
-        rewards = th.cat(batch.reward)
-        next_states = th.cat(batch.next_state)
-        final_states = th.tensor(batch.is_done, dtype=th.bool)
+        states = th.cat(batch.state).to(self.device)
+        actions = th.cat(batch.action).to(self.device)
+        rewards = th.cat(batch.reward).to(self.device)
+        next_states = th.cat(batch.next_state).to(self.device)
+        final_states = th.tensor(batch.is_done, dtype=th.bool).to(self.device)
         return states, actions, rewards, next_states, final_states
 
     def __get_moving_avg(self,values,period):
