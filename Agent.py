@@ -199,6 +199,7 @@ class SumTree:
         self.tree = np.zeros(2 * capacity - 1)
         self.data = np.zeros(capacity, dtype=object)
         self.write = 0
+        self.visited_nodes = set()
 
     def _propagate(self, idx, change):
         '''
@@ -208,6 +209,7 @@ class SumTree:
         change: The change in the priority of the experience'''
         parent = (idx - 1) // 2
         self.tree[parent] += change
+        self.visited_nodes.add(parent)
         if parent > 0:
             self._propagate(parent, change)
 
@@ -222,10 +224,10 @@ class SumTree:
         right = left + 1
         if left >= len(self.tree):
             return idx
-        if s <= self.tree[left] and self.tree[left] > 0:
+        if s <= self.tree[left] and left in self.visited_nodes:
             return self._retrieve(left, s)
         else:
-            if self.tree[right] > 0:
+            if right in self.visited_nodes:
                 return self._retrieve(right, s - self.tree[left])
             else:
                 return idx
@@ -260,6 +262,7 @@ class SumTree:
         '''
         change = p - self.tree[idx]
         self.tree[idx] = p
+        self.visited_nodes.add(idx)
         self._propagate(idx, change)
 
     def get(self, s):
