@@ -42,7 +42,7 @@ if __name__ == '__main__':
                 "Path": 'Episodes'
     }
     params_training = {
-                "batch_size": 128,
+                "batch_size": 10000,
                 "features": 1,
                 "gamma": 0.99,
                 "eps_start": 1,

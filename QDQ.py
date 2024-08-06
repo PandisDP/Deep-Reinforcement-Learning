@@ -59,21 +59,17 @@ class QDQ:
             print('No checkpoint found starting from scratch')    
         for episode in range(start_episode,num_episodes):
             self.env.reset()
-            episode_losses=[]
-            total_loss= 0
-            loss_count= 0
             for timestep in count():
                 state= self.env.get_state()
                 action= self.agent.select_action(state,self.policy_net)
                 reward,done= self.env.make_action(action)
                 next_state= self.env.get_state()
                 done = th.tensor([done], device=self.device, dtype=th.bool)
-                # Calculate the error for the priority
                 with th.no_grad():
                     current_q_value = self.qvalue.get_current_i(self.policy_net, state, action)
                     next_q_value = self.qvalue.get_next_i(self.target_net, next_state)
                     target_q_value = reward + (gamma * next_q_value * (1 - done.float()))
-                    error = abs(current_q_value - target_q_value).item()
+                    error = abs(current_q_value - target_q_value).item()    
                 self.memory.push(error, Experience(state, action, next_state, reward, done))
                 if self.memory.can_provide_sample(batch_size):
                     experiences,idxs,is_weights= self.memory.sample(batch_size)
@@ -83,21 +79,22 @@ class QDQ:
                         next_q_values= self.qvalue.get_next(self.target_net,next_states,is_done)
                     target_q_values= (next_q_values*gamma)+rewards
                     is_weights= th.tensor(is_weights,dtype=th.float).unsqueeze(1).to(self.device)
-                    #loss= F.mse_loss(current_q_values,target_q_values.unsqueeze(1))
                     loss = (is_weights * F.mse_loss(current_q_values, target_q_values.unsqueeze(1)
                                                     , reduction='none')).mean()
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
-                    # Update priorities
-                    errors = th.abs(current_q_values - target_q_values.unsqueeze(1)).detach().cpu().numpy()
-                    for idx, error in zip(idxs, errors):
-                        self.memory.update(idx, error)
-                    episode_losses.append(loss.item())
                     total_timesteps += 1
+                    errors = th.abs(current_q_values - target_q_values.unsqueeze(1)).detach()
+                    for idx, error in zip(idxs, errors):
+                        self.memory.update(idx, error.item())    
                 if done:
                     episode_durations.append(timestep)
-                    print("Episode: ",episode," Average_Losses: ",np.mean(episode_losses),
+                    if 'loss' in locals():
+                        avg_loss = loss.item()
+                    else:
+                        avg_loss = 0   
+                    print("Episode: ",episode," Average_Losses: ",avg_loss,
                         " Duration: ",timestep)  
                     self.save_checkpoint(episode,optimizer) 
                     break
@@ -131,9 +128,6 @@ class QDQ:
             print('No checkpoint found starting from scratch')  
         for episode in range(start_episode,num_episodes):
             self.env.reset()
-            episode_losses=[]
-            total_loss= 0
-            loss_count= 0
             for timestep in count():
                 state= self.env.get_state()
                 action= self.agent.select_action(state,self.policy_net)
@@ -152,12 +146,15 @@ class QDQ:
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
-                    episode_losses.append(loss.item())
                     total_timesteps += 1
                 if done:
                     episode_durations.append(timestep)
-                    print("Episode: ",episode," Average_Losses: ",np.mean(episode_losses),
-                        " Duration: ",timestep)
+                    if 'loss' in locals():
+                        avg_loss = loss.item()
+                    else:
+                        avg_loss = 0   
+                    print("Episode: ",episode," Average_Losses: ",avg_loss,
+                        " Duration: ",timestep) 
                     self.save_checkpoint(episode,optimizer)
                     break
                 if total_timesteps % target_update == 0:
